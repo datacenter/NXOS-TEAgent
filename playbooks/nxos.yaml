@@ -1,0 +1,149 @@
+  - hosts: nxos
+    gather_facts: no
+    connection: network_cli
+
+    tasks:
+
+    - name: set non-interactive terminal
+      register: result
+      cisco.nxos.nxos_command:
+        commands:
+          -  terminal dont-ask
+
+    - name: copy required files to router
+      register: result
+      cisco.nxos.nxos_file_copy:
+        file_pull: true
+        local_file: "{{ item }}"
+        remote_file: "{{ file_path }}/{{ item }}"
+        remote_scp_server: "{{ scp_server }}"
+        remote_scp_server_user: "{{ uname }}"
+        remote_scp_server_password: "{{ passwd }}"
+        vrf: management
+      with_items:
+         - resolv.conf
+         - exec.conf
+         - ntp.conf
+         - guestshell-post.sh
+         - guestshell-prep.sh    
+
+    # This task along with pause is required only if you want to 
+    # destroy existing guestshell and create a new one
+    - name: destroy guestshell
+      register: result
+      cisco.nxos.nxos_command:
+        commands:
+          -  guestshell destroy
+      ignore_errors: yes
+
+    - pause:
+        minutes: 5
+
+    # Configure rootfs/memory for guestshell - optional
+    # Guestshell, if activated already  needs to be 
+    # disabled and enabled after this
+    - name: configure device for guestshell
+      register: result
+      cisco.nxos.nxos_command:
+        commands:
+          -  guestshell resize rootfs 2000
+          -  guestshell resize memory 2048
+    
+    # Next 3 tasks - disable, pause and check for deactivated status
+    # are not required if guestshell is already deactivated or not enabled
+    - name: disable guestshell
+      register: result
+      cisco.nxos.nxos_command:
+        commands:
+          -  guestshell disable
+      ignore_errors: yes
+
+    - pause:
+        minutes: 5
+
+    - name: checks device for deactivited guestshell
+      register: result
+      cisco.nxos.nxos_command:
+        commands: show guestshell
+        wait_for: result[0] contains Deactivated
+      ignore_errors: yes
+
+    # Next 2 tasks - enable and pause are not required if guestshell is
+    # already enabled
+    - name: enable guestshell
+      register: result
+      cisco.nxos.nxos_command:
+        commands: guestshell enable
+
+    - pause:
+        minutes: 5
+
+    - name: checks device for guestshell
+      register: result
+      cisco.nxos.nxos_command:
+        commands: show guestshell
+        wait_for: result[0] contains Activated
+
+    - name: copy resolv.conf and ntp.conf to guestshell
+      register: result
+      cisco.nxos.nxos_command:
+        commands:
+          -  run guestshell sudo cp /bootflash/resolv.conf /etc/resolv.conf
+          -  run guestshell sudo cp /bootflash/ntp.conf /etc/ntp.conf
+
+    - name: copy and execute guestshell-prep.sh in guestshell
+      register: result
+      cisco.nxos.nxos_command:
+        commands:
+          -  run guestshell sudo cp /bootflash/guestshell-prep.sh /root/guestshell-prep.sh
+          -  run guestshell sudo ip netns exec management bash /root/guestshell-prep.sh
+
+    - name: reboot guestshell
+      register: result
+      cisco.nxos.nxos_command:
+        commands: guestshell reboot
+
+    - pause:
+        minutes: 5
+
+    - name: copy te-agent.service.d/exec.conf to guestshell
+      register: result
+      cisco.nxos.nxos_command:
+        commands:
+          -  run guestshell sudo mkdir -p /etc/systemd/system/te-agent.service.d
+          -  run guestshell sudo cp /bootflash/exec.conf /etc/systemd/system/te-agent.service.d/exec.conf
+
+    - name: copy and execute guestshell-post.sh in guestshell
+      register: result
+      cisco.nxos.nxos_command:
+        commands:
+          -  run guestshell sudo cp /bootflash/guestshell-post.sh /root/guestshell-post.sh
+          -  run guestshell sudo ip netns exec management bash /root/guestshell-post.sh
+
+    - name: checks for te-agent status in guestshell
+      register: result
+      cisco.nxos.nxos_command:
+        commands: run guestshell sudo systemctl status -l te-agent
+        wait_for: result[0] contains running
+
+    # The below tasks can be used to stop, start, uninstall and remove identity 
+    # of te-agent in guestshell
+    #- name: stop te-agent in guestshell
+    #  register: result
+    #  cisco.nxos.nxos_command:
+    #    commands: run guestshell sudo systemctl stop  te-agent
+
+    #- name: start te-agent in guestshell
+    #  register: result
+    #  cisco.nxos.nxos_command:
+    #    commands: run guestshell sudo systemctl start  te-agent
+
+    #- name: uninstall te-agent in guestshell
+    #  register: result
+    #  cisco.nxos.nxos_command:
+    #    commands: run guestshell sudo yum -y remove te-agent
+
+    #- name: remove te-agent identity in guestshell
+    #  register: result
+    #  cisco.nxos.nxos_command:
+    #    commands: run guestshell sudo rm -rf /bootflash/guestshell/thousandeyes/var/lib/te-agent
