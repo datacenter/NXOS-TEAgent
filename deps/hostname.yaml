@@ -1,0 +1,11 @@
+---
+http_proxy: someproxy.com:80
+https_proxy: someproxy.com:80
+domain_name: somedoamin.com
+name_server1: 1.1.1.1
+name_server2: 2.2.2.2
+ntp_server1: 1.somentp.com
+ntp_server2: 2.somentp.com
+ntp_server3: 3.somentp.com
+vrf_name: vrfname
+te_token: xyz123456abcd

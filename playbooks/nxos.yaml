@@ -4,13 +4,38 @@
 
     tasks:
 
-    - name: set non-interactive terminal
+    # Declare all the variables for creating the sh files in yaml.
+    # Sample file can be found in deps directory, please use the same variable names.
+    # Add "teagent_hostname" to your host vars and use the same name for your vars yaml
+    - include_vars:
+        file: "{{ teagent_hostname }}.yaml"
+
+    # Create the guestshell-prep.sh from template file using vars from yaml include
+    - name: Create the prep sh file from template file
+      delegate_to: local_host
+      ansible.builtin.template:
+        src: "{{ src_path }}/guestshell-prep.js"
+        dest: "{{ file_path_local }}/guestshell-prep.sh"
+      register: result
+
+    # Create the guestshell-post.sh from template file using vars from yaml include
+    - name: Create the post sh file from template file
+      delegate_to: local_host
+      ansible.builtin.template:
+        src: "{{ src_path }}/guestshell-post.js"
+        dest: "{{ file_path_local }}/guestshell-post.sh"
+      register: result
+
+    - name: Set non-interactive terminal
       register: result
       cisco.nxos.nxos_command:
         commands:
           -  terminal dont-ask
+      vars:
+        ansible_command_timeout: 500
+        ansible_connect_timeout: 500
 
-    - name: copy required files to router
+    - name: Copy required files to router
       register: result
       cisco.nxos.nxos_file_copy:
         file_pull: true
@@ -19,131 +44,155 @@
         remote_scp_server: "{{ scp_server }}"
         remote_scp_server_user: "{{ uname }}"
         remote_scp_server_password: "{{ passwd }}"
-        vrf: management
+        vrf: "{{ vrf }}"
       with_items:
-         - resolv.conf
-         - exec.conf
-         - ntp.conf
+         - guestshell-prep.sh
          - guestshell-post.sh
-         - guestshell-prep.sh    
+      vars:
+        ansible_command_timeout: 500
+        ansible_connect_timeout: 500
 
-    # This task along with pause is required only if you want to 
+    # This task along with pause is required only if you want to
     # destroy existing guestshell and create a new one
-    - name: destroy guestshell
+    - name: Destroy guestshell
       register: result
+      ignore_errors: yes
       cisco.nxos.nxos_command:
         commands:
           -  guestshell destroy
-      ignore_errors: yes
 
     - pause:
         minutes: 5
 
-    # Configure rootfs/memory for guestshell - optional
-    # Guestshell, if activated already  needs to be 
-    # disabled and enabled after this
-    - name: configure device for guestshell
+    # This task configures rootfs/memory for guestshell. Guestshell,
+    # if activated already  needs to be disabled and enabled after this task
+    # This task is not required, if guestshell is already configured with
+    # with required values.
+    - name: Configure device for guestshell
       register: result
       cisco.nxos.nxos_command:
         commands:
-          -  guestshell resize rootfs 2000
-          -  guestshell resize memory 2048
-    
-    # Next 3 tasks - disable, pause and check for deactivated status
+          -  guestshell resize rootfs 1200
+          -  guestshell resize memory 512
+          -  guestshell resize cpu 7
+      vars:
+        ansible_command_timeout: 500
+        ansible_connect_timeout: 500
+
+    # This task - disable, along with pause and check for deactivated status tasks
     # are not required if guestshell is already deactivated or not enabled
-    - name: disable guestshell
+    - name: Disable guestshell
       register: result
+      ignore_errors: yes
       cisco.nxos.nxos_command:
         commands:
           -  guestshell disable
-      ignore_errors: yes
+      vars:
+        ansible_command_timeout: 500
+        ansible_connect_timeout: 500
 
     - pause:
         minutes: 5
 
-    - name: checks device for deactivited guestshell
+    - name: Checks device for deactivited guestshell
       register: result
+      ignore_errors: yes
       cisco.nxos.nxos_command:
         commands: show guestshell
         wait_for: result[0] contains Deactivated
-      ignore_errors: yes
+      vars:
+        ansible_command_timeout: 500
+        ansible_connect_timeout: 500
 
-    # Next 2 tasks - enable and pause are not required if guestshell is
+    # This task - enable along with pause are not required if guestshell is
     # already enabled
-    - name: enable guestshell
+    - name: Enable guestshell
       register: result
       cisco.nxos.nxos_command:
         commands: guestshell enable
+      vars:
+        ansible_command_timeout: 500
+        ansible_connect_timeout: 500
 
     - pause:
         minutes: 5
 
-    - name: checks device for guestshell
+    - name: Checks device for guestshell status
       register: result
       cisco.nxos.nxos_command:
         commands: show guestshell
         wait_for: result[0] contains Activated
+      vars:
+        ansible_command_timeout: 500
+        ansible_connect_timeout: 500
 
-    - name: copy resolv.conf and ntp.conf to guestshell
-      register: result
-      cisco.nxos.nxos_command:
-        commands:
-          -  run guestshell sudo cp /bootflash/resolv.conf /etc/resolv.conf
-          -  run guestshell sudo cp /bootflash/ntp.conf /etc/ntp.conf
-
-    - name: copy and execute guestshell-prep.sh in guestshell
+    - name: Copy and execute guestshell-prep.sh in guestshell
       register: result
       cisco.nxos.nxos_command:
         commands:
           -  run guestshell sudo cp /bootflash/guestshell-prep.sh /root/guestshell-prep.sh
           -  run guestshell sudo ip netns exec management bash /root/guestshell-prep.sh
+      vars:
+        ansible_command_timeout: 500
+        ansible_connect_timeout: 500
 
-    - name: reboot guestshell
+    - name: Reboot guestshell
       register: result
       cisco.nxos.nxos_command:
         commands: guestshell reboot
+      vars:
+        ansible_command_timeout: 500
+        ansible_connect_timeout: 500
 
     - pause:
         minutes: 5
 
-    - name: copy te-agent.service.d/exec.conf to guestshell
+    - name: Checks device for guestshell status
       register: result
       cisco.nxos.nxos_command:
-        commands:
-          -  run guestshell sudo mkdir -p /etc/systemd/system/te-agent.service.d
-          -  run guestshell sudo cp /bootflash/exec.conf /etc/systemd/system/te-agent.service.d/exec.conf
+        commands: show guestshell
+        wait_for: result[0] contains Activated
+      vars:
+        ansible_command_timeout: 500
+        ansible_connect_timeout: 500
 
-    - name: copy and execute guestshell-post.sh in guestshell
+    - name: Copy and execute guestshell-post.sh in guestshell
       register: result
       cisco.nxos.nxos_command:
         commands:
           -  run guestshell sudo cp /bootflash/guestshell-post.sh /root/guestshell-post.sh
           -  run guestshell sudo ip netns exec management bash /root/guestshell-post.sh
+      vars:
+        ansible_command_timeout: 500
+        ansible_connect_timeout: 500
 
-    - name: checks for te-agent status in guestshell
+    - name: Checks for te-agent status in guestshell
       register: result
       cisco.nxos.nxos_command:
         commands: run guestshell sudo systemctl status -l te-agent
         wait_for: result[0] contains running
+      vars:
+        ansible_command_timeout: 500
+        ansible_connect_timeout: 500
 
-    # The below tasks can be used to stop, start, uninstall and remove identity 
+    # The below tasks can be used to stop, start, uninstall and remove identity
     # of te-agent in guestshell
-    #- name: stop te-agent in guestshell
+    #- name: Stop te-agent in guestshell
     #  register: result
     #  cisco.nxos.nxos_command:
     #    commands: run guestshell sudo systemctl stop  te-agent
 
-    #- name: start te-agent in guestshell
+    #- name: Start te-agent in guestshell
     #  register: result
     #  cisco.nxos.nxos_command:
     #    commands: run guestshell sudo systemctl start  te-agent
 
-    #- name: uninstall te-agent in guestshell
+    #- name: Uninstall te-agent in guestshell
     #  register: result
     #  cisco.nxos.nxos_command:
     #    commands: run guestshell sudo yum -y remove te-agent
 
-    #- name: remove te-agent identity in guestshell
+    #- name: Remove te-agent identity in guestshell
     #  register: result
     #  cisco.nxos.nxos_command:
     #    commands: run guestshell sudo rm -rf /bootflash/guestshell/thousandeyes/var/lib/te-agent
