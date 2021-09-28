@@ -1,0 +1,29 @@
+all:
+  vars:
+    ansible_user: "username"
+    ansible_password: "password"
+    ansible_connection: ansible.netcommon.network_cli
+    ansible_python_interpreter: python
+    ansible_ssh_port: 22
+    ansible_network_os: cisco.nxos.nxos
+  children:
+    nxos:
+      hosts:
+         host1:
+            ansible_network_os: cisco.nxos.nxos
+            teagent_hostname: host1
+            file_path: /file/path/to/copy/to/router
+            file_path_local: /file/path/to/generate/shellscripts
+            src_path: /file/path/to/template/files
+            uname: user-name # user name for nxos file copy from scp server
+            passwd: pass-word  # password for nxos file copy from scp server
+            scp_server: 1.1.1.1
+         host2:
+            ansible_network_os: cisco.nxos.nxos
+            teagent_hostname: host2
+            file_path: /file/path/to/copy/to/router
+            file_path_local: /file/path/to/generate/shellscripts
+            src_path: /file/path/to/template/files
+            uname: user-name # user name for nxos file copy from scp server
+            passwd: pass-word  # password for nxos file copy from scp server
+            scp_server: 2.2.2.2
