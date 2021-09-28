@@ -18,12 +18,13 @@ The Ansible playbook and related YAML files, will require customization to suit 
 1. In the teagent_hostname.yaml file, common variables across hosts can be configured such as http_proxy, domain, ThousandEyes token etc can be specified.
 2. The hosts and host specific variables, such as hostname and file_paths can be provided in the inventory.yaml file.
 3. Depending on the current state of the guestshell certain customizations of the guestshell may be required. The playbook called nxos.yaml needs to be adjusted to address various scenarios. If the guestshell meet the following requirements, no changes are required. 
-  * 1024M rootfs
-  * 512M memory
-  * 7% CPU
+	* 1024M rootfs
+	* 512M memory
+	* 7% CPU
  
 
 	The playbook in this repo destroys and then configures the guestshell for a clean deployment, however if maintaining the current state of the guestshell is required, that task can be removed. 
 	
-The duration taken to install the ThousandEyes Agent can vary, depending on several factors, including the CPU and memory allotted to the guestshell, the link speed to download the ThousandEyes Agent. Pauses and timeouts are incorporated into the playbook to address this variability, but may need to be adjusted to suit a unique deployment scenario. 
+The duration taken to install the ThousandEyes Agent can vary, depending on several factors, including the CPU and memory allotted to the guestshell, the link speed to download the ThousandEyes Agent, amongst others factors. Pauses and timeouts are incorporated into the playbook to address this variability, but may need to be adjusted to suit a unique deployment scenario. 
+
 
