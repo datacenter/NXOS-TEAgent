@@ -25,6 +25,6 @@ The Ansible playbook and related YAML files, will require customization to suit 
 
 	The playbook in this repo destroys and then configures the guestshell for a clean deployment, however if maintaining the current state of the guestshell is required, that task can be removed. 
 	
-The duration taken to install the ThousandEyes Agent can vary, depending on several factors, including the CPU and memory allotted to the guestshell, the link speed to download the ThousandEyes Agent, amongst others factors. Pauses and timeouts are incorporated into the playbook to address this variability, but may need to be adjusted to suit a unique deployment scenario. 
+The duration taken to install the ThousandEyes Agent can vary, depending on several factors, including the CPU and memory allotted to the guestshell, the link speed to download the ThousandEyes Agent. Pauses and timeouts are incorporated into the playbook to address this variability, but may need to be adjusted to suit a unique deployment scenario. 
 
 
