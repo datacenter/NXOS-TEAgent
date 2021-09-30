@@ -15,7 +15,7 @@
       delegate_to: local_host
       ansible.builtin.template:
         src: "{{ src_path }}/guestshell-prep.js"
-        dest: "{{ file_path_local }}/guestshell-prep.sh"
+        dest: "{{ file_path }}/guestshell-prep.sh"
       register: result
 
     # Create the guestshell-post.sh from template file using vars from yaml include
@@ -23,7 +23,7 @@
       delegate_to: local_host
       ansible.builtin.template:
         src: "{{ src_path }}/guestshell-post.js"
-        dest: "{{ file_path_local }}/guestshell-post.sh"
+        dest: "{{ file_path }}/guestshell-post.sh"
       register: result
 
     - name: Set non-interactive terminal
