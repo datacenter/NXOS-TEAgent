@@ -12,18 +12,18 @@ all:
          host1:
             ansible_network_os: cisco.nxos.nxos
             teagent_hostname: host1
-            file_path: /file/path/to/copy/to/router
-            file_path_local: /file/path/to/generate/shellscripts
+            file_path: /file/path/to/generate/shellscripts
             src_path: /file/path/to/template/files
             uname: user-name # user name for nxos file copy from scp server
             passwd: pass-word  # password for nxos file copy from scp server
             scp_server: 1.1.1.1
+            vrf: vrfname # vrf in switch to be used for filr copy from scp server
          host2:
             ansible_network_os: cisco.nxos.nxos
             teagent_hostname: host2
-            file_path: /file/path/to/copy/to/router
-            file_path_local: /file/path/to/generate/shellscripts
+            file_path: /file/path/to/generate/shellscripts
             src_path: /file/path/to/template/files
             uname: user-name # user name for nxos file copy from scp server
             passwd: pass-word  # password for nxos file copy from scp server
             scp_server: 2.2.2.2
+            vrf: vrfname # vrf in switch to be used for filr copy from scp server
