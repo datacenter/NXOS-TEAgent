@@ -51,6 +51,17 @@ if [ -n "$DB_RELOC" ]; then
     fi
 fi
 
+########
+# 2022-05-13 Updated to prevent logging to .warn files.
+# Warnings are already in the .log files and are removed to save tmpfs space
+if grep -q "^num-warn-log-files=" $TE_AGENT_CFG_LOCATION; then
+    sed -i "s/num-warn-log-files=.*/num-warn-log-files=0/" $TE_AGENT_CFG_LOCATION
+else
+    # num-warn-log-files is currently not in the packaged config file, so we need to add it
+    echo "num-warn-log-files=0" >> $TE_AGENT_CFG_LOCATION
+fi
+ 
+
 cat $TE_AGENT_CFG_LOCATION
 
 systemctl start te-agent
