@@ -45,7 +45,7 @@ TE_AGENT_CFG_LOCATION="/etc/te-agent.cfg"
 DB_RELOC="$TEA_DB_DIR/te-agent.sqlite"
 if [ -n "$DB_RELOC" ]; then
     if grep -q "^db=" $TE_AGENT_CFG_LOCATION; then
-        sed -i "s/db=.*/db=${DB_RELOC}/" $TE_AGENT_CFG_LOCATION
+        sed -i "s!db=.*/db=${DB_RELOC}/" $TE_AGENT_CFG_LOCATION
     else
         echo "db=${DB_RELOC}" >> $TE_AGENT_CFG_LOCATION
     fi
